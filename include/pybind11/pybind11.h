@@ -568,7 +568,7 @@ public:
     }
 
     module def_submodule(const char *name, const char *doc = nullptr) {
-        std::string full_name = std::string(PyModule_GetName(m_ptr))
+        std::string full_name = attr("__name__").cast<std::string>()
             + std::string(".") + std::string(name);
         auto result = reinterpret_borrow<module>(PyImport_AddModule(full_name.c_str()));
         if (doc && options::show_user_defined_docstrings())
@@ -1256,9 +1256,12 @@ public:
         PyObject *dict = ((PyTypeObject *) this->m_ptr)->tp_dict;
         PyObject *key, *value;
         ssize_t pos = 0;
-        while (PyDict_Next(dict, &pos, &key, &value))
+
+        while (PyDict_Next(dict, &pos, &key, &value)) {
             if (PyObject_IsInstance(value, this->m_ptr))
                 m_parent.attr(key) = value;
+        }
+
         return *this;
     }
 
@@ -1641,6 +1644,20 @@ public:
 private:
     PyThreadState *tstate;
     bool disassoc;
+};
+#elif defined(PYPY_VERSION)
+class gil_scoped_acquire {
+    PyGILState_STATE state;
+public:
+    gil_scoped_acquire() { state = PyGILState_Ensure(); }
+    ~gil_scoped_acquire() { PyGILState_Release(state); }
+};
+
+class gil_scoped_release {
+    PyThreadState *state;
+public:
+    gil_scoped_release() { state = PyEval_SaveThread(); }
+    ~gil_scoped_release() { PyEval_RestoreThread(state); }
 };
 #else
 class gil_scoped_acquire { };

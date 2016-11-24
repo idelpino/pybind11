@@ -138,7 +138,7 @@ template <typename Type, typename Value> struct list_caster {
             auto value_ = reinterpret_steal<object>(value_conv::cast(value, policy, parent));
             if (!value_)
                 return handle();
-            PyList_SET_ITEM(l.ptr(), index++, value_.release().ptr()); // steals a reference
+            PyList_SET_ITEM(l.ptr(), (ssize_t) index++, value_.release().ptr()); // steals a reference
         }
         return l.release();
     }
@@ -179,7 +179,7 @@ template <typename Type, size_t Size> struct type_caster<std::array<Type, Size>>
             auto value_ = reinterpret_steal<object>(value_conv::cast(value, policy, parent));
             if (!value_)
                 return handle();
-            PyList_SET_ITEM(l.ptr(), index++, value_.release().ptr()); // steals a reference
+            PyList_SET_ITEM(l.ptr(), (ssize_t) index++, value_.release().ptr()); // steals a reference
         }
         return l.release();
     }
