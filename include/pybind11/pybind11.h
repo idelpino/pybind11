@@ -1664,6 +1664,14 @@ class gil_scoped_acquire { };
 class gil_scoped_release { };
 #endif
 
+error_already_set::~error_already_set() {
+    if (value) {
+        gil_scoped_acquire gil;
+        PyErr_Restore(type, value, trace);
+        PyErr_Clear();
+    }
+}
+
 #if defined(PYPY_VERSION)
 inline bool PyWeakref_Check(PyObject *obj) {
     return module::import("weakref").attr("ref").ptr() == obj;

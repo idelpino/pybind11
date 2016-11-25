@@ -475,7 +475,16 @@ public:
     error_already_set() : std::runtime_error(detail::error_string()) {
         PyErr_Fetch(&type, &value, &trace);
     }
-    ~error_already_set() { Py_XDECREF(type); Py_XDECREF(value); Py_XDECREF(trace); }
+
+    error_already_set(const error_already_set &) = delete;
+
+    error_already_set(error_already_set &&e)
+        : std::runtime_error(e.what()), type(e.type), value(e.value),
+          trace(e.trace) { e.type = e.value = e.trace = nullptr; }
+
+    inline ~error_already_set(); // implementation in pybind11.h
+
+    error_already_set& operator=(const error_already_set &) = delete;
 
     /// Give the error back to Python
     void restore() { PyErr_Restore(type, value, trace); type = value = trace = nullptr; }
