@@ -118,10 +118,9 @@ test_initializer methods_and_attributes([](py::module &m) {
         .def("internal4", &ExampleMandA::internal4)
         .def("internal5", &ExampleMandA::internal5)
         .def("__str__", &ExampleMandA::toString)
-        .def_readwrite("value", &ExampleMandA::value)
-        ;
+        .def_readwrite("value", &ExampleMandA::value);
 
-    py::class_<TestProperties>(m, "TestProperties")
+    py::class_<TestProperties>(m, "TestProperties", py::metaclass())
         .def(py::init<>())
         .def_readonly("def_readonly", &TestProperties::value)
         .def_readwrite("def_readwrite", &TestProperties::value)
@@ -144,7 +143,7 @@ test_initializer methods_and_attributes([](py::module &m) {
     auto static_set2 = [](py::object, int v) { TestPropRVP::sv2.value = v; };
     auto rvp_copy = py::return_value_policy::copy;
 
-    py::class_<TestPropRVP>(m, "TestPropRVP")
+    py::class_<TestPropRVP>(m, "TestPropRVP", py::metaclass())
         .def(py::init<>())
         .def_property_readonly("ro_ref", &TestPropRVP::get1)
         .def_property_readonly("ro_copy", &TestPropRVP::get2, rvp_copy)

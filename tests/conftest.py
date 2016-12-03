@@ -1,7 +1,8 @@
 """pytest configuration
 
-Extends output capture as needed by pybind11: ignore constructors, optional unordered lines.
-Adds docstring and exceptions message sanitizers: ignore Python 2 vs 3 differences.
+Extends output capture as needed by pybind11: ignore constructors, optional
+unordered lines. Adds docstring and exceptions message sanitizers: ignore
+Python 2 vs 3 differences.
 """
 
 import pytest
@@ -10,6 +11,7 @@ import difflib
 import re
 import sys
 import contextlib
+import platform
 
 _unicode_marker = re.compile(r'u(\'[^\']*\')')
 _long_marker = re.compile(r'([0-9])L')
@@ -27,8 +29,9 @@ def _split_and_sort(s):
 
 
 def _make_explanation(a, b):
-    """Explanation for a failed assert -- the a and b arguments are List[str]"""
-    return ["--- actual / +++ expected"] + [line.strip('\n') for line in difflib.ndiff(a, b)]
+    """Explain a failed assertion -- a and b are of type List[str]"""
+    return ["--- actual / +++ expected"] + \
+           [line.strip('\n') for line in difflib.ndiff(a, b)]
 
 
 class Output(object):
@@ -42,7 +45,8 @@ class Output(object):
 
     def __eq__(self, other):
         # Ignore constructor/destructor output which is prefixed with "###"
-        a = [line for line in self.string.strip().splitlines() if not line.startswith("###")]
+        a = [line for line in self.string.strip().splitlines()
+             if not line.startswith("###")]
         b = _strip_and_dedent(other).splitlines()
         if a == b:
             return True
@@ -122,7 +126,8 @@ class SanitizedString(object):
         if a == b:
             return True
         else:
-            self.explanation = _make_explanation(a.splitlines(), b.splitlines())
+            self.explanation = _make_explanation(a.splitlines(),
+                                                 b.splitlines())
             return False
 
 
@@ -190,30 +195,38 @@ def pytest_namespace():
         from pybind11_tests import have_eigen
     except ImportError:
         have_eigen = False
+    pypy = platform.python_implementation() == "PyPy"
 
     skipif = pytest.mark.skipif
     return {
         'suppress': suppress,
-        'requires_numpy': skipif(not np, reason="numpy is not installed"),
-        'requires_scipy': skipif(not np, reason="scipy is not installed"),
-        'requires_eigen_and_numpy': skipif(not have_eigen or not np,
-                                           reason="eigen and/or numpy are not installed"),
-        'requires_eigen_and_scipy': skipif(not have_eigen or not scipy,
-                                           reason="eigen and/or scipy are not installed"),
+        'requires_numpy': skipif(
+            not np, reason="numpy is not installed"),
+        'requires_scipy': skipif(
+            not np, reason="scipy is not installed"),
+        'unsupported_on_pypy': skipif(
+            pypy, reason="unsupported on PyPy"),
+        'requires_eigen_and_numpy': skipif(
+            not have_eigen or not np,
+            reason="eigen and/or numpy are not installed"),
+        'requires_eigen_and_scipy': skipif(
+            not have_eigen or not scipy,
+            reason="eigen and/or scipy are not installed"),
     }
 
 
 def _test_import_pybind11():
     """Early diagnostic for test module initialization errors
 
-    When there is an error during initialization, the first import will report the
-    real error while all subsequent imports will report nonsense. This import test
-    is done early (in the pytest configuration file, before any tests) in order to
-    avoid the noise of having all tests fail with identical error messages.
+    When there is an error during initialization, the first import will report
+    the real error while all subsequent imports will report nonsense. This
+    import test is done early (in the pytest configuration file, before any
+    tests) in order to avoid the noise of having all tests fail with identical
+    error messages.
 
-    Any possible exception is caught here and reported manually *without* the stack
-    trace. This further reduces noise since the trace would only show pytest internals
-    which are not useful for debugging pybind11 module issues.
+    Any possible exception is caught here and reported manually *without* the
+    stack trace. This further reduces noise since the trace would only show
+    pytest internals which are not useful for debugging pybind11 module issues.
     """
     # noinspection PyBroadException
     try:
